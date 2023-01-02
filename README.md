@@ -11,7 +11,7 @@ traefik/
     docker-compose.yml
 ```
 
-## Envionment
+## Environment
 
 Duplicate the `.env.template` file and rename it to `.env`
 
@@ -33,8 +33,8 @@ sudo apt-get install apache2-utils
 htpasswd -nb <username> <secure_password>
 ```
 
-`SERVER_IP` is used if you use [pi-hole](https://github.com/m1rkwood/traefik-docker).
-If you're using [Wireguard](https://github.com/m1rkwood/wireguard), use the Wireguard server IP here.
+`SERVER_IP` is used if you use [pi-hole](https://github.com/tmssd/kb-tpl-docker-pihole).
+If you're using [Wireguard](https://github.com/tmssd/kb-tpl-wireguard), use the Wireguard server IP here.
 
 ## acme.json
 
