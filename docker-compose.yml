@@ -1,0 +1,83 @@
+version: "3.8"
+
+services:
+  traefik:
+    image: traefik:v2.9.6
+    container_name: traefik
+    restart: always
+    volumes:
+      #
+      # before running, you need create & change permissions
+      # of acme.json
+      # touch acme.json
+      # chmod 600 acme.json
+      - ./acme.json:/acme.json
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "80:80"
+      - "443:443"
+      #
+      # pihole ports
+      # comment if you don't use pihole
+      # if using Wireguard, use wireguard server address as SERVER_IP
+      # Using ${SERVER_IP} avoids using below commands
+      # systemctl stop systemd-resolved.service
+      # systemctl disable systemd-resolved.service
+      #- "${SERVER_IP}:53:53/tcp"
+      #- "${SERVER_IP}:53:53/udp"
+    networks:
+      - web
+    command:
+      - "--log.level=DEBUG"
+      #
+      # api
+      - "--api.dashboard=true"
+      #
+      # docker
+      - "--providers.docker=true"
+      - "--providers.docker.watch=true"
+      - "--providers.docker.network=web"
+      - "--providers.docker.exposedbydefault=false"
+      #
+      # entrypoints
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--entrypoints.websecure.address=:443"
+      #
+      # pihole entrypoints
+      # comment if you don't use pihole
+      #- "--entrypoints.dns.address=:53/tcp"
+      #- "--entrypoints.udpdns.address=:53/udp"
+      #
+      # ssl resolver
+      - "--certificatesresolvers.letsencrypt.acme.email=${LETSENCRYPT_EMAIL}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=acme.json"
+      # choose between tls or httpChallenge
+      - "--certificatesresolvers.letsencrypt.acme.tlschallenge=true"
+      # - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+      # - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+      # uncomment to test your certs with staging
+      #- "--certificatesresolvers.letsencrypt.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory"
+    labels:
+      #
+      # traefik dashboard
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`${TRAEFIK_HOST}`)"
+      - "traefik.http.routers.traefik.service=api@internal"
+      - "traefik.http.routers.traefik.middlewares=auth"
+      - "traefik.http.routers.traefik.entrypoints=websecure"
+      - "traefik.http.routers.traefik.tls.certresolver=letsencrypt"
+      #
+      # generate user:password
+      # sudo apt-get install apache2-utils
+      # htpasswd -nb <username> <secure_password>
+      - "traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_DASHBOARD_USERNAME}:${TRAEFIK_DASHBOARD_PASSWORD}"
+      #
+#
+# create the network before running this docker-compose
+# docker network create web
+networks:
+  web:
+    external: true
